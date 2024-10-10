@@ -69,33 +69,33 @@
   <div class="page-width">
     <div class="product product--{{ section.settings.media_size }} product--{{ section.settings.media_position }} product--{{ section.settings.gallery_layout }} product--mobile-{{ section.settings.mobile_thumbnails }} grid grid--1-col {% if product.media.size > 0 %}grid--2-col-tablet{% else %}product--no-media{% endif %}">
       <div class="grid__item product__media-wrapper{% if section.settings.media_position == 'right' %} medium-hide large-up-hide{% endif %}">
-        <div class="product-images">
+        <div class="slider_product_product-images">
           <!-- Main Image -->
-          <div class="image-container">
+          <div class="slider_product_image-container">
             {% for image in product.images %}
               <img
                 src="{{ image | img_url: '750x' }}"
                 alt="{{ image.alt }}"
-                class="image {% if forloop.first %}active{% endif %}"
+                class="slider_product_image {% if forloop.first %}active{% endif %}"
               >
             {% endfor %}
           </div>
 
           <!-- Thumbnails -->
-          <div class="thumbnail-container">
+          <div class="slider_product_thumbnail-container">
             {% for image in product.images %}
               <img
                 src="{{ image | img_url: '100x150' }}"
                 alt="{{ image.alt }}"
-                class="thumbnail {% if forloop.first %}active{% endif %}"
+                class="slider_product_thumbnail {% if forloop.first %}active{% endif %}"
                 data-index="{{ forloop.index0 }}"
               >
             {% endfor %}
           </div>
 
           <!-- Progress Bar -->
-          <div class="progress-bar-container">
-            <div class="progress-bar"></div>
+          <div class="slider_product_progress-bar-container">
+            <div class="slider_product_progress-bar"></div>
           </div>
         </div>
       </div>
@@ -798,6 +798,151 @@
         ]
       }
     </script>
+    <script>
+  // Select all images and thumbnails
+  const images = document.querySelectorAll('.slider_product_image');
+  const thumbnails = document.querySelectorAll('.slider_product_thumbnail');
+  const progressBar = document.querySelector('.slider_product_progress-bar');
+  const imageContainer = document.querySelector('.slider_product_image-container');
+  let currentImage = 0;
+
+  // Function to update the main image and progress bar
+  function updateMainImage(index, direction) {
+    images.forEach((img, i) => {
+      img.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out'; // Apply transition
+      img.style.opacity = 0; // Hide all images
+
+      // Apply sliding animation based on direction
+      if (direction === 'down') {
+        img.style.transform = i === index ? 'translateY(0)' : 'translateY(-100%)';
+      } else {
+        img.style.transform = i === index ? 'translateY(0)' : 'translateY(100%)';
+      }
+
+      // Show the current image
+      if (i === index) {
+        img.style.opacity = 1;
+      }
+    });
+
+    // Update the active thumbnail border and opacity
+    thumbnails.forEach(thumbnail => {
+      thumbnail.style.borderColor = 'transparent'; // Remove the border from all thumbnails
+      thumbnail.style.opacity = 0.6; // Set default opacity for all thumbnails
+    });
+    thumbnails[index].style.borderColor = '#101010'; // Set the border color for the active thumbnail
+    thumbnails[index].style.opacity = 1; // Set opacity to 1 for the active thumbnail
+
+    // Update progress bar height based on the image index
+    const progressPercentage = ((index + 1) / images.length) * 100;
+    progressBar.style.height = `${progressPercentage}%`;
+  }
+
+  // Add scroll event listener to the image container
+  imageContainer.addEventListener('wheel', (event) => {
+    const direction = event.deltaY > 0 ? 'down' : 'up'; // Determine scroll direction
+
+    if (direction === 'down') {
+      currentImage = (currentImage + 1) % images.length; // Go to next image
+    } else {
+      currentImage = (currentImage - 1 + images.length) % images.length; // Go to previous image
+    }
+
+    updateMainImage(currentImage, direction); // Update the image based on scroll and direction
+
+    // Prevent scrolling on the rest of the page when scrolling in the image area
+    event.preventDefault();
+  });
+
+  // Add event listener to each thumbnail for click behavior
+  thumbnails.forEach((thumbnail, index) => {
+    thumbnail.addEventListener('click', () => {
+      const direction = index > currentImage ? 'down' : 'up'; // Determine direction based on thumbnail click
+      currentImage = index; // Set current image index based on clicked thumbnail
+      updateMainImage(currentImage, direction); // Update the main image
+    });
+  });
+
+  // Initialize: Set the first thumbnail as active and update progress bar
+  updateMainImage(currentImage, 'down');
+
+  // Buy Now button functionality
+  document.getElementById('buy-now').addEventListener('click', function() {
+    const productId = document.getElementById('product-id-input').value;
+    const quantity = document.getElementById('quantity').value;
+
+    // Redirect to checkout page with product and quantity pre-filled
+    window.location.href = `/checkout?updates[${productId}]=${quantity}`;
+  });
+    </script>
+
+    <style>
+           /* Column 2: Product Image Gallery */
+      .slider_product_product-images {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        position: relative;
+        width: 100%;
+      }
+
+      .slider_product_image-container {
+        width: 100%;
+        position: relative;
+        background-color: #000;
+      }
+
+      .slider_product_image {
+        width: 100%;
+        height: auto;
+        position: absolute;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        transform: translateY(100%);
+        transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+      }
+
+      .slider_product_image.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .slider_product_thumbnail-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .slider_product_thumbnail {
+        cursor: pointer;
+        object-fit: cover;
+        width: 40px;
+        height: 60px;
+        border-radius: 5px;
+        opacity: 0.6; /* Default opacity for inactive thumbnails */
+        border: 1px solid transparent;
+        transition: opacity 0.3s ease-in-out, border-color 0.3s ease-in-out;
+      }
+
+      .slider_product_progress-bar-container {
+        position: absolute;
+        top: 0;
+        width: 1px;
+        height: 730px;
+        background-color: #ddd;
+        border-radius: 3px;
+        right: 48px;
+      }
+
+      .slider_product_progress-bar {
+        width: 100%;
+        height: 0;
+        background-color: #121212;
+        transition: height 0.5s ease-in-out;
+        display: inherit !important;
+      }
+    </style>
   </div>
 </section>
 
